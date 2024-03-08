@@ -4,51 +4,54 @@
 # Version: 1.0
 # Author: Manuel Cebrian of NET.FR
 
-# Usage:
-# 1. Make this script executable with: chmod +x update-discord-deb.sh
-# 2. Add a cron job to run this script daily by editing your crontab with: crontab -e
-#    and adding the line: 0 0 * * * /path/to/update-discord-deb.sh
-#    Replace /path/to/update-discord-deb.sh with the actual script path.
+# Usage instructions and cron job setup are embedded within this script.
+# Add a cron job to execute this script daily by editing your crontab:
+# crontab -e
+# Add the line: 0 0 * * * /path/to/update-discord-deb.sh
 
 # Download URL and path
 download_url="https://discord.com/api/download/canary?platform=linux&format=deb"
 download_path="/tmp"
 
-# Change to the download directory
+# Filename pattern to match the downloaded file
+pattern="discord-canary-*.deb"
+
+# Move to the download path
 cd "$download_path"
 
-# Attempt to download the .deb package with the correct file name
-wget_output=$(wget --content-disposition "$download_url" -N 2>&1)
+# Download the latest Discord Canary version
+wget --content-disposition "$download_url" -N
 
-# Extract the downloaded file name from wget output
-latest_downloaded_file=$(echo "$wget_output" | grep -o -P '(?<=‘).*(?=’ has been saved)')
+# Find the most recently downloaded .deb file
+latest_downloaded_file=$(ls -Art $pattern | tail -n 1)
 
-# Check if the file was downloaded
-if [ -z "$latest_downloaded_file" ]; then
+if [[ -z "$latest_downloaded_file" ]]; then
     echo "Failed to download the Discord package. Exiting."
     exit 1
 fi
 
-# Function to install Discord if a new version is detected
+# Record of the last installed version
+last_installed_version_file="$download_path/last_installed_version.txt"
+
 install_discord() {
+    echo "Installing Discord Canary: $latest_downloaded_file"
     if sudo dpkg -i "$latest_downloaded_file"; then
-        echo "Discord installed successfully."
-        echo "$latest_downloaded_file" > "$download_path/last_installed_version.txt"
+        echo "$latest_downloaded_file" > "$last_installed_version_file"
+        echo "Installation successful."
     else
-        echo "Failed to install Discord. Please check for errors."
+        echo "Installation failed."
+        exit 1
     fi
 }
 
 # Check for a new version and install if necessary
-if [ -f "$download_path/last_installed_version.txt" ]; then
-    last_installed_version=$(cat "$download_path/last_installed_version.txt")
+if [ -f "$last_installed_version_file" ]; then
+    last_installed_version=$(cat "$last_installed_version_file")
     if [ "$latest_downloaded_file" != "$last_installed_version" ]; then
-        echo "Detected a new version of Discord Canary."
         install_discord
     else
-        echo "Current version of Discord Canary is up to date."
+        echo "The latest version of Discord Canary is already installed."
     fi
 else
-    echo "Installing Discord Canary for the first time."
     install_discord
 fi
