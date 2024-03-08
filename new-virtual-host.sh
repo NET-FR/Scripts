@@ -6,7 +6,7 @@ generate_password() {
 }
 
 # Demande le nom de domaine
-read -p "Entrez le nom de domaine (exemple: net.fr): " DOMAIN
+read -p "Entrez le nom de domaine (exemple: my-premium-domain.net.fr): " DOMAIN
 
 # Chemins des dossiers
 DOC_ROOT="/var/www/$DOMAIN/web"
